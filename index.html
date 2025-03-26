@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU Scheduling Simulator</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i data-lucide="cpu" class="i"></i>CPU Scheduling Simulator</h1>
+        </header>
+        <div class="grid">
+            <div class="card process-list">
+                <h2>Process List</h2>
+                <div class="input-group">
+                    <input type="number" id="processID" placeholder="Process ID" min="1">
+                    <input type="number" id="arrivalTime" placeholder="Arrival Time" min="0">
+                    <input type="number" id="burstTime" placeholder="Burst Time" min="0">
+                    <input type="number" id="priority" placeholder="Priority" min="0" class="hidden">
+                    <button id="addProcess" class="btn-primary">
+                        <i data-lucide="plus" style="height: 16px; margin-right: -7px;"></i>
+                        Add Process
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="processTable">
+                        <thead>
+                            <tr>
+                                <th>Process ID</th>
+                                <th>Arrival Time</th>
+                                <th>Burst Time</th>
+                                <th>Priority</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card control-panel">
+                <h2>Control Panel</h2>
+                <div class="control-group">
+                    <label for="algorithm">Scheduling Algorithm</label>
+                    <select id="algorithm">
+                        <option value="FCFS">First Come First Served</option>
+                        <option value="SJF">Shortest Job First</option>
+                        <option value="RR">Round Robin</option>
+                        <option value="Priority">Priority Scheduling</option>
+                    </select>
+                    <div id="quantumGroup" class="hidden">
+                        <label for="timeQuantum">Time Quantum</label>
+                        <input type="number" id="timeQuantum" min="1" value="2">
+                    </div>
+                    <div id="priorityDirectionGroup" class="hidden">
+                        <label for="priorityDirection">Priority Direction</label>
+                        <select id="priorityDirection">
+                            <option value="low">Low Number = High Priority</option>
+                            <option value="high">High Number = High Priority</option>
+                        </select>
+                    </div>
+                    <button id="calculate" class="btn-primary">
+                        <i data-lucide="monitor" style="height: 17px;"></i>
+                        Calculate
+                    </button>
+                    <button id="reset" class="btn-secondary">
+                        <i data-lucide="rotate-cw" style="height: 16px;"></i>
+                        Reset
+                    </button>
+                </div>
+            </div>
+            <div class="card gantt-section">
+                <h2>Gantt Chart</h2>
+                <div id="ganttChart" class="gantt-container"></div>
+            </div>
+            <div class="card results-section">
+                <h2>Results</h2>
+                <div class="metrics">
+                    <div class="metric-card">
+                        <p>Average Turnaround Time</p>
+                        <p id="avgTurnaroundTime" class="metric-value">0.00</p>
+                    </div>
+                    <div class="metric-card">
+                        <p>Average Waiting Time</p>
+                        <p id="avgWaitingTime" class="metric-value">0.00</p>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>Process ID</th>
+                                <th>Arrival Time</th>
+                                <th>Burst Time</th>
+                                <th>Priority</th>
+                                <th>Completion Time</th>
+                                <th>Waiting Time</th>
+                                <th>Turnaround Time</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+    <script>
+        lucide.createIcons();
+      </script>
+</body>
+</html>
+
+
+
+
+
