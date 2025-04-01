@@ -95,22 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateResult(result);
     }
     
-    function fcfs() {
-        const queue = [...processes].sort((a, b) => a.arrival - b.arrival);
-        let time = 0;
-        let ganttData = [];
-        let result = [];
-        
-        queue.forEach(p => {
-            time = Math.max(time, p.arrival);
-            ganttData.push({ id: p.id, start: time, end: time + p.burst });
-            result.push({ ...p, finish: time + p.burst, turnaround: time + p.burst - p.arrival, wait: time - p.arrival });
-            time += p.burst;
-        });
-        
-        return { result, ganttData, maxTime: time };
-    }
-    
     function rr(q) {
         let queue = [...processes].map(p => ({ ...p, remaining: p.burst }));
         let time = 0;
@@ -118,18 +102,24 @@ document.addEventListener('DOMContentLoaded', () => {
         let result = [];
         
         while (queue.length > 0) {
-            let p = queue.shift();
-            if (p.arrival > time) {
-                time = p.arrival;
-            }
-            let runTime = Math.min(q, p.remaining);
-            ganttData.push({ id: p.id, start: time, end: time + runTime });
-            time += runTime;
-            p.remaining -= runTime;
-            if (p.remaining > 0) {
-                queue.push(p);
-            } else {
-                result.push({ ...p, finish: time, turnaround: time - p.arrival, wait: time - p.arrival - p.burst });
+            let executed = false;
+            queue.forEach((p, index) => {
+                if (p.arrival <= time && p.remaining > 0) {
+                    let runTime = Math.min(q, p.remaining);
+                    if (time > 0 && ganttData.length > 0 && ganttData[ganttData.length - 1].end < time) {
+                        ganttData.push({ id: 'idle', start: ganttData[ganttData.length - 1].end, end: time });
+                    }
+                    ganttData.push({ id: p.id, start: time, end: time + runTime });
+                    time += runTime;
+                    p.remaining -= runTime;
+                    executed = true;
+                    if (p.remaining === 0) {
+                        result.push({ ...p, finish: time, turnaround: time - p.arrival, wait: time - p.arrival - p.burst });
+                    }
+                }
+            });
+            if (!executed) {
+                time++;
             }
         }
         return { result, ganttData, maxTime: time };
@@ -155,13 +145,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function updateGantt(ganttData, maxTime) {
         gantt.innerHTML = '';
-        ganttData.forEach((p, i) => {
+        ganttData.forEach(p => {
             const bar = document.createElement('div');
             bar.className = 'gantt-bar';
-            bar.style.backgroundColor = colors[p.id % colors.length];
+            bar.style.backgroundColor = p.id === 'idle' ? '#ddd' : colors[p.id % colors.length];
             bar.style.left = `${(p.start / maxTime) * 100}%`;
             bar.style.width = `${((p.end - p.start) / maxTime) * 100}%`;
-            bar.textContent = `P${p.id}`;
+            bar.textContent = p.id === 'idle' ? '' : `P${p.id}`;
             gantt.appendChild(bar);
         });
     }
