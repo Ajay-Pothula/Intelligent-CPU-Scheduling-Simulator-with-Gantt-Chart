@@ -1,168 +1,253 @@
-document.addEventListener('DOMContentLoaded', () => {
-    let processes = [];
-    const colors = ['#4f46e5', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#6366f1', '#ef4444', '#14b8a6'];
-
-    const table = document.getElementById('processTable');
-    const resultTable = document.getElementById('resultsTable');
-    const gantt = document.getElementById('ganttChart');
-    const algo = document.getElementById('algorithm');
-    const quantumBox = document.getElementById('quantumGroup');
-    const priorityBox = document.getElementById('priorityDirectionGroup');
-    const quantum = document.getElementById('timeQuantum');
-
-    document.getElementById('addProcess').addEventListener('click', add);
-    document.getElementById('calculate').addEventListener('click', run);
-    document.getElementById('reset').addEventListener('click', reset);
-    algo.addEventListener('change', updateAlgoOptions);
-
-    function updateAlgoOptions() {
-        quantumBox.classList.toggle('hidden', algo.value !== 'RR');
-        priorityBox.classList.toggle('hidden', algo.value !== 'Priority');
+document.addEventListener('DOMContentLoaded',()=>{
+    let processList=[];
+    const colors=['#4f46e5','#10b981','#8b5cf6','#f59e0b','#ec4899','#6366f1','#ef4444','#14b8a6'];
+    const processTable=document.getElementById('processTable');
+    const resultsTable = document.getElementById('resultsTable');
+    const ganttChart = document.getElementById('ganttChart');
+    const algorithmSelect = document.getElementById('algorithm');
+    const quantumGroup = document.getElementById('quantumGroup');
+    const priorityInput = document.getElementById('priority');
+    const priorityg = document.getElementById('priorityDirectionGroup');
+    const timeQuantum = document.getElementById('timeQuantum');
+    document.getElementById('addProcess').addEventListener('click', addProcess);
+    document.getElementById('calculate').addEventListener('click', calculate);
+    document.getElementById('reset').addEventListener('click', resetSimulation);
+    algorithmSelect.addEventListener('change', algooptions);
+    function algooptions(){
+        const isPriority =algorithmSelect.value==='Priority';
+        const isRR =algorithmSelect.value==='RR';    
+        quantumGroup.classList.toggle('hidden',!isRR);
+        priorityg.classList.toggle('hidden',!isPriority);
+        priorityInput.classList.toggle('hidden',!isPriority);
     }
-
-    function add() {
-        const id = document.getElementById('processID');
-        const arrival = document.getElementById('arrivalTime');
-        const burst = document.getElementById('burstTime');
+    function addProcess() {
+        const processID = document.getElementById('processID');
+        const arrivalTime = document.getElementById('arrivalTime');
+        const burstTime = document.getElementById('burstTime');
         const priority = document.getElementById('priority');
-
-        if (!id.value || !arrival.value || !burst.value) {
-            alert('Fill in Process ID, Arrival Time, and Burst Time');
+        if (!processID.value || !arrivalTime.value || !burstTime.value) {
+            alert('Please fill in Process ID, Arrival Time, and Burst Time');
             return;
         }
-
-        if (algo.value === 'Priority' && !priority.value) {
-            alert('Enter priority value');
+        if (algorithmSelect.value === 'Priority' && !priority.value) {
+            alert('Please enter a priority value for Priority Scheduling');
             return;
         }
-
-        processes.push({
-            id: parseInt(id.value),
-            arrival: parseInt(arrival.value),
-            burst: parseInt(burst.value),
-            priority: algo.value === 'Priority' ? parseInt(priority.value) : 0
-        });
-
-        updateTable();
-        clear([id, arrival, burst, priority]);
+        const process = {
+            processID: parseInt(processID.value),
+            arrivalTime: parseInt(arrivalTime.value),
+            burstTime: parseInt(burstTime.value),
+            priority: algorithmSelect.value === 'Priority' ? parseInt(priority.value) : 0
+        };
+        processList.push(process);
+        updateProcessTable();
+        clearInputs([processID, arrivalTime, burstTime, priority]);
     }
-
-    function updateTable() {
-        const tbody = table.querySelector('tbody');
-        tbody.innerHTML = '';
-        processes.forEach(p => {
+    function updateProcessTable() {
+        const tbody = processTable.querySelector('tbody');
+        tbody.innerHTML = '';   
+        processList.forEach(process => {
             const row = tbody.insertRow();
-            Object.values(p).forEach(val => {
+            Object.values(process).forEach(value => {
                 const cell = row.insertCell();
-                cell.textContent = val;
+                cell.textContent = value;
             });
         });
     }
-
-    function clear(inputs) {
-        inputs.forEach(i => (i.value = ''));
+    function clearInputs(inputs) {
+        inputs.forEach(input => input.value = '');
     }
-
-    function reset() {
-        processes = [];
-        updateTable();
-        resultTable.querySelector('tbody').innerHTML = '';
-        gantt.innerHTML = '';
+    function resetSimulation() {
+        processList = [];
+        updateProcessTable();
+        resultsTable.querySelector('tbody').innerHTML = '';
+        ganttChart.innerHTML = '';
         document.getElementById('avgTurnaroundTime').textContent = '0.00';
         document.getElementById('avgWaitingTime').textContent = '0.00';
     }
-
-    function run() {
-        if (processes.length === 0) {
-            alert('Add processes first');
+    function calculate() {
+        if (processList.length === 0) {
+            alert('Please add some processes first');
             return;
         }
-
-        let result;
-        switch (algo.value) {
-            case 'FCFS': result = fcfs(); break;
-            case 'SJF': result = sjf(); break;
+        const algorithm = algorithmSelect.value;
+        let results;
+        switch (algorithm) {
+            case 'FCFS':
+                results = calculateFCFS();
+                break;
+            case 'SJF':
+                results = calculateSJF();
+                break;
             case 'RR':
-                const q = parseInt(quantum.value);
-                if (!q || q <= 0) {
-                    alert('Enter valid quantum');
+                const quantum = parseInt(timeQuantum.value);
+                if (!quantum || quantum <= 0) {
+                    alert('Please enter a valid time quantum');
                     return;
                 }
-                result = rr(q);
+                results = calculateRR(quantum);
                 break;
-            case 'Priority': result = priority(); break;
+            case 'Priority':
+                results = calculatePriority();
+                break;
         }
-        updateResult(result);
+        updateResults(results);
     }
-
-    function fcfs() {
-        const queue = [...processes].sort((a, b) => a.arrival - b.arrival);
-        let time = 0;
-        let ganttData = [];
-        let result = [];
-
-        queue.forEach(p => {
-            time = Math.max(time, p.arrival);
-            ganttData.push({ id: p.id, start: time, end: time + p.burst });
-            result.push({ ...p, finish: time + p.burst, turnaround: time + p.burst - p.arrival, wait: time - p.arrival });
-            time += p.burst;
+    function calculateFCFS() {
+        const processes = [...processList].sort((a, b) => a.arrivalTime - b.arrivalTime);
+        let currentTime = 0;
+        const completedProcesses = [];
+        const ganttData = [];
+        processes.forEach(process => {
+            currentTime = Math.max(currentTime, process.arrivalTime);
+            const startTime = currentTime;
+            currentTime += process.burstTime;
+            completedProcesses.push({
+                ...process,
+                completionTime: currentTime,
+                turnaroundTime: currentTime - process.arrivalTime,
+                waitingTime: currentTime - process.arrivalTime - process.burstTime
+            });
+            ganttData.push({ processID: process.processID, startTime, endTime: currentTime });
         });
-
-        return { result, ganttData, maxTime: time };
+        return { completedProcesses, ganttData, maxTime: currentTime };
     }
+    function calculateSJF() {
+        const processes = [...processList];
+        let currentTime = 0;
+        const completedProcesses = [];
+        const ganttData = [];
+        while (processes.length > 0) {
+            const availableProcesses = processes.filter(p => p.arrivalTime <= currentTime);
 
-    function rr(q) {
-        let queue = [...processes].map(p => ({ ...p, remaining: p.burst }));
-        let time = 0;
-        let ganttData = [];
-        let result = [];
-
-        while (queue.length > 0) {
-            let p = queue.shift();
-            if (p.arrival > time) {
-                time = p.arrival;
+            if (availableProcesses.length === 0) {
+                currentTime = Math.min(...processes.map(p => p.arrivalTime));
+                continue;
             }
-            let runTime = Math.min(q, p.remaining);
-            ganttData.push({ id: p.id, start: time, end: time + runTime });
-            time += runTime;
-            p.remaining -= runTime;
-            if (p.remaining > 0) {
-                queue.push(p);
+            const shortestJob = availableProcesses.reduce((prev, curr) => 
+                prev.burstTime < curr.burstTime ? prev : curr
+            );
+            const startTime = currentTime;
+            currentTime += shortestJob.burstTime;
+            completedProcesses.push({
+                ...shortestJob,
+                completionTime: currentTime,
+                turnaroundTime: currentTime - shortestJob.arrivalTime,
+                waitingTime: currentTime - shortestJob.arrivalTime - shortestJob.burstTime
+            });
+            ganttData.push({ processID: shortestJob.processID, startTime, endTime: currentTime });
+            const index = processes.findIndex(p => p.processID === shortestJob.processID);
+            processes.splice(index, 1);
+        }
+        return { completedProcesses, ganttData, maxTime: currentTime };
+    }
+    function calculateRR(quantum) {
+        const processes = [...processList].map(p => ({ ...p, remainingTime: p.burstTime }));
+        let currentTime = 0;
+        const completedProcesses = [];
+        const ganttData = [];
+        while (processes.length > 0) {
+            const process = processes.shift();
+            if (process.arrivalTime > currentTime) {
+                currentTime = process.arrivalTime;
+            }
+            const executeTime = Math.min(quantum, process.remainingTime);
+            const startTime = currentTime;
+            currentTime += executeTime;
+            process.remainingTime -= executeTime;
+            ganttData.push({ processID: process.processID, startTime, endTime: currentTime });
+            if (process.remainingTime > 0) {
+                processes.push(process);
             } else {
-                result.push({ ...p, finish: time, turnaround: time - p.arrival, wait: time - p.arrival - p.burst });
+                completedProcesses.push({
+                    ...process,
+                    completionTime: currentTime,
+                    turnaroundTime: currentTime - process.arrivalTime,
+                    waitingTime: currentTime - process.arrivalTime - process.burstTime
+                });
             }
         }
-        return { result, ganttData, maxTime: time };
+        return { completedProcesses, ganttData, maxTime: currentTime };
     }
-
-    function updateResult({ result, ganttData, maxTime }) {
-        const tbody = resultTable.querySelector('tbody');
+    function calculatePriority() {
+        const processes = [...processList];
+        let currentTime = 0;
+        const completedProcesses = [];
+        const ganttData = [];
+        const isLowPriorityHigh = priorityg.value === 'low';
+        while (processes.length > 0) {
+            const availableProcesses = processes.filter(p => p.arrivalTime <= currentTime);
+            if (availableProcesses.length === 0) {
+                currentTime = Math.min(...processes.map(p => p.arrivalTime));
+                continue;
+            }
+            const highestPriorityJob = availableProcesses.reduce((prev, curr) => {
+                if (isLowPriorityHigh) {
+                    return prev.priority < curr.priority ? prev : curr;
+                } else {
+                    return prev.priority > curr.priority ? prev : curr;
+                }
+            });
+            const startTime = currentTime;
+            currentTime += highestPriorityJob.burstTime;
+            completedProcesses.push({
+                ...highestPriorityJob,
+                completionTime: currentTime,
+                turnaroundTime: currentTime - highestPriorityJob.arrivalTime,
+                waitingTime: currentTime - highestPriorityJob.arrivalTime - highestPriorityJob.burstTime
+            });
+            ganttData.push({ processID: highestPriorityJob.processID, startTime, endTime: currentTime });
+            const index = processes.findIndex(p => p.processID === highestPriorityJob.processID);
+            processes.splice(index, 1);
+        }
+        return { completedProcesses, ganttData, maxTime: currentTime };
+    }
+    function updateResults({ completedProcesses, ganttData, maxTime }) {
+        const tbody = resultsTable.querySelector('tbody');
         tbody.innerHTML = '';
-
-        result.forEach(p => {
+        completedProcesses.forEach(process => {
             const row = tbody.insertRow();
-            [p.id, p.arrival, p.burst, p.priority, p.finish, p.wait, p.turnaround].forEach(val => {
+            [
+                process.processID,
+                process.arrivalTime,
+                process.burstTime,
+                process.priority,
+                process.completionTime,
+                process.waitingTime,
+                process.turnaroundTime
+            ].forEach(value => {
                 const cell = row.insertCell();
-                cell.textContent = val;
+                cell.textContent = value;
             });
         });
-
-        document.getElementById('avgTurnaroundTime').textContent = (result.reduce((sum, p) => sum + p.turnaround, 0) / result.length).toFixed(2);
-        document.getElementById('avgWaitingTime').textContent = (result.reduce((sum, p) => sum + p.wait, 0) / result.length).toFixed(2);
-
-        updateGantt(ganttData, maxTime);
+        const avgTurnaroundTime = completedProcesses.reduce((sum, p) => sum + p.turnaroundTime, 0) / completedProcesses.length;
+        const avgWaitingTime = completedProcesses.reduce((sum, p) => sum + p.waitingTime, 0) / completedProcesses.length;
+        document.getElementById('avgTurnaroundTime').textContent = avgTurnaroundTime.toFixed(2);
+        document.getElementById('avgWaitingTime').textContent = avgWaitingTime.toFixed(2);
+        updateGanttChart(ganttData, maxTime);
     }
-
-    function updateGantt(ganttData, maxTime) {
-        gantt.innerHTML = '';
-        ganttData.forEach((p, i) => {
+    function updateGanttChart(ganttData, maxTime) {
+        ganttChart.innerHTML = '';
+        const timeline = document.createElement('div');
+        timeline.className = 'timeline';
+        for (let i = 0; i <= maxTime; i++) {
+            const marker = document.createElement('span');
+            marker.textContent = i;
+            timeline.appendChild(marker);
+        }
+        ganttChart.appendChild(timeline);
+        const chart = document.createElement('div');
+        chart.className = 'gantt-chart';
+        ganttData.forEach((process, index) => {
             const bar = document.createElement('div');
             bar.className = 'gantt-bar';
-            bar.style.backgroundColor = colors[p.id % colors.length];
-            bar.style.left = `${(p.start / maxTime) * 100}%`;
-            bar.style.width = `${((p.end - p.start) / maxTime) * 100}%`;
-            bar.textContent = `P${p.id}`;
-            gantt.appendChild(bar);
+            bar.style.backgroundColor = colors[process.processID % colors.length];
+            bar.style.left = `${(process.startTime / maxTime) * 100}%`;
+            bar.style.width = `${((process.endTime - process.startTime) / maxTime) * 100}%`;
+            bar.textContent = `P${process.processID}`;
+            chart.appendChild(bar);
         });
+        ganttChart.appendChild(chart);
     }
+    toggleAlgorithmOptions();
 });
