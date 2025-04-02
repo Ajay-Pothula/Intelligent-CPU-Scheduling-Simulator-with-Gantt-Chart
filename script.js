@@ -251,3 +251,4 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
     toggleAlgorithmOptions();
 });
+
