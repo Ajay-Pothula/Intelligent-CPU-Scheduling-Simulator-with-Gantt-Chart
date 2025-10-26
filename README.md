@@ -32,6 +32,6 @@ The intelligent CPU scheduler provides real time interactive visualization of th
 Implementation of other CPU scheduling algorithms, like SJF in preemptive and MLFQ(Multi-Level-Feedback-Queue) and some rate and dead monotonic. 
 Real Time gantt chart visualization. Performance metrics calculation and UI updates.
 
-The Intelligent CPU scheduling simulator successfully simulates and visualizes  the cpu scheduling algorithms. It helps users analyse various scheduling techniques by displaying through performance metrics nad gantt chart visualization. Thus serving as a educational tool for students, professionals and other educational experts.
+The Intelligent CPU scheduling simulator successfully simulates and visualizes  the cpu scheduling algorithms. It helps users analyse various scheduling techniques by displaying through performance metrics nad gantt chart visualization. Thus serving as a educational tool for students, professionals and other educational expert.
 
 
